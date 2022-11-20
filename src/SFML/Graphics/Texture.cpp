@@ -866,18 +866,6 @@ unsigned int Texture::getMaximumSize()
     return static_cast<unsigned int>(size);
 }
 
-
-////////////////////////////////////////////////////////////
-Texture& Texture::operator=(const Texture& right)
-{
-    Texture temp(right);
-
-    swap(temp);
-
-    return *this;
-}
-
-
 ////////////////////////////////////////////////////////////
 void Texture::swap(Texture& right)
 {
