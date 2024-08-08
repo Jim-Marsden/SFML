@@ -206,7 +206,7 @@ public:
     ///
     /// \return The event, otherwise `std::nullopt` if no events are pending
     ///
-    /// \see waitEvent, handleEvents
+    /// \see waitEvent, handlePollEvents, handleWaitEvents
     ///
     ////////////////////////////////////////////////////////////
     [[nodiscard]] std::optional<Event> pollEvent();
@@ -232,7 +232,7 @@ public:
     ///
     /// \return The event, otherwise `std::nullopt` on timeout or if window was closed
     ///
-    /// \see pollEvent, handleEvents
+    /// \see pollEvent, handlePollEvents, handleWaitEvents
     ///
     ////////////////////////////////////////////////////////////
     [[nodiscard]] std::optional<Event> waitEvent(Time timeout = Time::Zero);
@@ -261,14 +261,14 @@ public:
     ///
     /// \code
     /// // Only provide handlers for concrete event types
-    /// window.handleEvents(
+    /// window.handlePollEvents(
     ///     [&](const sf::Event::Closed&) { /* handle event */ },
     ///     [&](const sf::Event::KeyPressed& keyPress) { /* handle event */ }
     /// );
     /// \endcode
     /// \code
     /// // Provide a generic event handler
-    /// window.handleEvents(
+    /// window.handlePollEvents(
     ///     [&](const auto& event)
     ///     {
     ///         if constexpr (std::is_same_v<std::decay_t<decltype(event)>, sf::Event::Closed>)
@@ -291,7 +291,7 @@ public:
     /// \endcode
     /// \code
     /// // Provide handlers for concrete types and fall back to generic handler
-    /// window.handleEvents(
+    /// window.handlePollEvents(
     ///     [&](const sf::Event::Closed&) { /* handle event */ },
     ///     [&](const sf::Event::KeyPressed& keyPress) { /* handle event */ },
     ///     [&](const auto& event) { /* handle all other events */ }
@@ -302,18 +302,104 @@ public:
     /// expressions.
     /// \code
     /// // Provide a generic event handler
-    /// window.handleEvents(
+    /// window.handlePollEvents(
     ///     [this](const auto& event) { handle(event); }
     /// );
     /// \endcode
     ///
     /// \param handlers A variadic list of callables that take a specific event as their only parameter
     ///
-    /// \see waitEvent, pollEvent
+    /// \see waitEvent, pollEvent, handleWaitEvent
     ///
     ////////////////////////////////////////////////////////////
     template <typename... Ts>
-    void handleEvents(Ts&&... handlers);
+    void handlePollEvents(Ts&&... handlers);
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Handles pending events
+    ///
+    /// This function is blocking: if there is not event it will wait
+    /// until an event is received or it has timed out. sf::Time::Zero
+    /// for an infinite timeout.
+    ///
+    /// This function takes a variadic list of event handlers that
+    /// each take a concrete event type as a single parameter. The event
+    /// handlers can be any kind of callable object that has an
+    /// operator() defined for a specific event type. Additionally a
+    /// generic callable can also be provided that will be invoked for
+    /// every event type. If both types of callables are provided, the
+    /// callables taking concrete event types will be preferred over the
+    /// generic callable by overload resolution. Generic callables can
+    /// be used to customize handler dispatching based on the deduced
+    /// type of the event and other information available at compile
+    /// time.
+    ///
+    ///
+    /// Examples of callables:
+    /// - Lambda expressions: `[&](const sf::Event::KeyPressed) { ... }`
+    /// - Free functions: `void handler(const sf::Event::KeyPressed&) { ... }`
+    ///
+    /// \code
+    /// // Only provide handlers for concrete event types
+    /// window.handleWaitEvents(
+    ///     sf::Time::Zero,
+    ///     [&](const sf::Event::Closed&) { /* handle event */ },
+    ///     [&](const sf::Event::KeyPressed& keyPress) { /* handle event */ }
+    /// );
+    /// \endcode
+    /// \code
+    /// // Provide a generic event handler
+    /// window.handleWaitEvents(
+    ///     sf::Time::Zero,
+    ///     [&](const auto& event)
+    ///     {
+    ///         if constexpr (std::is_same_v<std::decay_t<decltype(event)>, sf::Event::Closed>)
+    ///         {
+    ///             // Handle Closed
+    ///             handleClosed();
+    ///         }
+    ///         else if constexpr (std::is_same_v<std::decay_t<decltype(event)>, sf::Event::KeyPressed>)
+    ///         {
+    ///             // Handle KeyPressed
+    ///             handleKeyPressed(event);
+    ///         }
+    ///         else
+    ///         {
+    ///             // Handle non-KeyPressed
+    ///             handleOtherEvents(event);
+    ///         }
+    ///     }
+    /// );
+    /// \endcode
+    /// \code
+    /// // Provide handlers for concrete types and fall back to generic handler
+    /// window.handleWaitEvents(
+    ///     sf::Time::Zero,
+    ///     [&](const sf::Event::Closed&) { /* handle event */ },
+    ///     [&](const sf::Event::KeyPressed& keyPress) { /* handle event */ },
+    ///     [&](const auto& event) { /* handle all other events */ }
+    /// );
+    /// \endcode
+    ///
+    /// Calling member functions is supported through lambda
+    /// expressions.
+    /// \code
+    /// // Provide a generic event handler
+    /// window.handleWaitEvents(
+    ///     sf::Time::Zero,
+    ///     [this](const auto& event) { handle(event); }
+    /// );
+    /// \endcode
+    ///
+    /// \param timeout How long to wait for an event, sf::Time::Zero to wait forever.
+    ///
+    /// \param handlers A variadic list of callables that take a specific event as their only parameter
+    ///
+    /// \see waitEvent, pollEvent, handlePollEvent
+    ///
+    ////////////////////////////////////////////////////////////
+    template <typename... Ts>
+    void handleWaitEvents(sf::Time timeout, Ts&&... handlers);
 
     ////////////////////////////////////////////////////////////
     /// \brief Get the position of the window
@@ -635,3 +721,4 @@ private:
 /// \endcode
 ///
 ////////////////////////////////////////////////////////////
+

@@ -204,12 +204,16 @@ TEST_CASE("[Window] sf::WindowBase", runDisplayTests())
         sf::WindowBase windowBase(sf::VideoMode({360, 240}), "WindowBase Tests");
 
         // Should compile if user provides only a specific handler
-        windowBase.handleEvents([](const sf::Event::Closed&) {});
+        windowBase.handlePollEvents([](const sf::Event::Closed&) {});
+        windowBase.handleWaitEvents(sf::Time::Zero, [](const sf::Event::Closed&) {});
 
         // Should compile if user provides only a catch-all
-        windowBase.handleEvents([](const auto&) {});
+        windowBase.handlePollEvents([](const auto&) {});
+        windowBase.handleWaitEvents(sf::Time::Zero, [](const auto&) {});
 
         // Should compile if user provides both a specific handler and a catch-all
-        windowBase.handleEvents([](const sf::Event::Closed&) {}, [](const auto&) {});
+        windowBase.handlePollEvents([](const sf::Event::Closed&) {}, [](const auto&) {});
+        windowBase.handleWaitEvents(sf::Time::Zero, [](const sf::Event::Closed&) {}, [](const auto&) {});
     };
 }
+
